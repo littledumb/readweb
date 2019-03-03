@@ -25,6 +25,8 @@ Options:
 * `url`: (required) the web page url.
 * `keepHref`: (optional, default `false`) if `true`, the returned text will keep links in the original content.
 * `paretoRatio`: (optional, default 0.6) the pareto ratio, should be less than 1.0 but greater than 0.5.
+* `selector`: (optional) a cheerio selector, if specified, pareto algorithm will be skipped.
+* `keepMarkup`: (optional, dafault false) if `true`, will return html instead of plain text.
 
 ### Test
 
