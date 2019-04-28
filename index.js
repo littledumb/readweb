@@ -1,8 +1,15 @@
 'use strict';
 
-const phantom = require('phantom');
+//const phantom = require('phantom');
+const createPhantomPool = require('phantom-pool');
 const cheerio = require('cheerio');
 const htmlToText = require('html-to-text');
+
+const pool = createPhantomPool({
+  phantomArgs: [[
+    '--ignore-ssl-errors=yes', '--ssl-protocol=any', '--load-images=no'
+  ]]
+});
 
 // Use Pareto's principle to find the main element
 const pareto = ($, el, r) => {
@@ -14,16 +21,6 @@ const pareto = ($, el, r) => {
     }
   });
   return candidate;
-};
-
-const closePhantom = async (ph, page) => {
-  if (page) {
-    await page.close();
-  }
-
-  if (ph) {
-    ph.exit();
-  }
 };
 
 /**
@@ -40,47 +37,49 @@ const closePhantom = async (ph, page) => {
  */
 module.exports = ({url, paretoRatio, keepHref, selector, keepMarkup} = {}) => {
   return new Promise((resolve, reject) => {
-    let _ph = null;
+    // let _ph = null;
     let _page = null;
     let _status = null;
-    return phantom
-      .create()
-      .then(ph => {
-        _ph = ph;
-        return _ph.createPage();
-      })
-      .then(page => {
-        _page = page;
-        return page.open(url);
-      })
-      .then(status => {
-        _status = status;
-        return _page.property('content');
-      })
-      .then(content => {
-        closePhantom(_ph, _page);
 
-        if (_status >= 400) {
-          reject(new Error(content));
-        }
+    return pool.use(async instance => {
+      return instance.createPage();
+    })
+    .then(page => {
+      _page = page;
+      return page.open(url);
+    })
+    .then(status => {
+      _status = status;
+      return _page.property('content');
+    })
+    .then(content => {
+      _page.close().then();
+      pool.drain().then(() => pool.clear());
 
-        const $ = cheerio.load(content);
-        const html = selector ? $(selector).html() : $(pareto($, $('body'), paretoRatio || 0.6)).html();
+      if (_status >= 400) {
+        reject(new Error(content));
+      }
 
-        if (keepMarkup) {
-          resolve(html);
-        }
+      const $ = cheerio.load(content);
+      const html = selector ? $(selector).html() : $(pareto($, $('body'), paretoRatio || 0.6)).html();
 
-        const text = htmlToText.fromString(html, {
-          ignoreHref: !keepHref,
-          wordwrap: false,
-          singleNewLineParagraphs: true
-        }).replace(/\n\s*\n/g, '\n').replace(/\n/g, '\n\n');
-        resolve(text);
-      })
-      .catch(error => {
-        closePhantom(_ph, _page);
-        reject(error);
-      });
+      if (keepMarkup) {
+        resolve(html);
+      }
+
+      const text = htmlToText.fromString(html, {
+        ignoreHref: !keepHref,
+        wordwrap: false,
+        singleNewLineParagraphs: true
+      }).replace(/\n\s*\n/g, '\n').replace(/\n/g, '\n\n');
+
+      resolve(text);
+    })
+    .catch(error => {
+      _page.close().then();
+      pool.drain().then(() => pool.clear());
+      
+      reject(error);
+    });
   });
 };

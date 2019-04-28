@@ -16,6 +16,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "html-to-text": "^4.0.0",
-    "phantom": "^6.0.3"
+    "phantom": "^6.0.3",
+    "phantom-pool": "^1.2.2"
   }
 }
