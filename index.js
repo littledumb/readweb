@@ -1,6 +1,5 @@
 'use strict';
 
-//const phantom = require('phantom');
 const createPhantomPool = require('phantom-pool');
 const cheerio = require('cheerio');
 const htmlToText = require('html-to-text');
@@ -10,6 +9,10 @@ const pool = createPhantomPool({
     '--ignore-ssl-errors=yes', '--ssl-protocol=any', '--load-images=no'
   ]]
 });
+
+const close = () => {
+  pool.drain().then(() => pool.clear());
+};
 
 // Use Pareto's principle to find the main element
 const pareto = ($, el, r) => {
@@ -35,7 +38,7 @@ const pareto = ($, el, r) => {
  *
  * @returns {Promise} Promise object representing text of the main content
  */
-module.exports = ({url, paretoRatio, keepHref, selector, keepMarkup} = {}) => {
+const read = ({url, paretoRatio, keepHref, selector, keepMarkup, closePool} = {}) => {
   return new Promise((resolve, reject) => {
     // let _ph = null;
     let _page = null;
@@ -54,7 +57,6 @@ module.exports = ({url, paretoRatio, keepHref, selector, keepMarkup} = {}) => {
     })
     .then(content => {
       _page.close().then();
-      pool.drain().then(() => pool.clear());
 
       if (_status >= 400) {
         reject(new Error(content));
@@ -77,9 +79,10 @@ module.exports = ({url, paretoRatio, keepHref, selector, keepMarkup} = {}) => {
     })
     .catch(error => {
       _page.close().then();
-      pool.drain().then(() => pool.clear());
-      
+
       reject(error);
     });
   });
 };
+
+module.exports = {read, close};

@@ -12,6 +12,12 @@ const keepMarkup = process.argv.includes('--keepMarkup');
 const selectorArg = process.argv.filter(a => a.startsWith('--selector=')).pop();
 const selector = selectorArg ? selectorArg.substring('--selector='.length) : null;
 
-readweb({url, paretoRatio, keepHref, keepMarkup, selector}).then(content => {
-  console.log(content);
-});
+const exec = async () => {
+  const content1 = await readweb.read({url, paretoRatio, keepHref, keepMarkup, selector});
+  console.log(content1.length);
+  const content2 = await readweb.read({url, paretoRatio, keepHref, keepMarkup, selector});
+  console.log(content2.length);
+  readweb.close();
+}
+
+exec();
