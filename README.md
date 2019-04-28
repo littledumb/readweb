@@ -15,9 +15,11 @@ Code Example:
 ```
 const readweb = require('readweb');
 
-readweb({url: 'https://a-web-page-url'}).then(txt => {
+readweb.read({url: 'https://a-web-page-url'}).then(txt => {
   console.log(txt);
 });
+
+readweb.close();
 ```
 
 Options:
