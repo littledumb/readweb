@@ -1,6 +1,6 @@
 {
   "name": "readweb",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Read main content of a web page using Pareto principle.",
   "main": "index.js",
   "repository": {
