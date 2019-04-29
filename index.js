@@ -79,7 +79,9 @@ const read = ({url, paretoRatio, keepHref, selector, keepMarkup, closePool} = {}
       resolve(text);
     })
     .catch(error => {
-      _page.close().then();
+      if (_page) {
+        _page.close().then();
+      }
 
       reject(error);
     });
