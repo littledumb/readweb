@@ -5,6 +5,7 @@ const cheerio = require('cheerio');
 const htmlToText = require('html-to-text');
 
 const pool = createPhantomPool({
+  maxUses: 0,
   phantomArgs: [[
     '--ignore-ssl-errors=yes', '--ssl-protocol=any', '--load-images=no'
   ]]
