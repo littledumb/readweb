@@ -13,9 +13,11 @@ const paretoRatio = paretoArg ? parseFloat(paretoArg.substring('--paretoRatio='.
 const keepMarkup = process.argv.includes('--keepMarkup');
 const usePhantom = process.argv.includes('--usePhantom');
 
-const exec = async () => {
-  const content = await readweb.read(url, {selector, paretoRatio, keepHref, keepMarkup, usePhantom});
-  console.log(content);
-};
-
-exec();
+readweb
+  .read(url, {selector, paretoRatio, keepHref, keepMarkup, usePhantom})
+  .then(content => {
+    console.log(content);
+  })
+  .catch(error => {
+    console.error(error);
+  });
