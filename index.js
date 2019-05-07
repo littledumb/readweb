@@ -87,11 +87,12 @@ const readWithRequest = (url, callback) => {
       - paretoRatio {number} should be less than 1.0 but greater than 0.5, default 0.6
       - keepHref {boolean} whether to keep links in the content, default false
       - keepMarkup {boolean} whether to return html or plain text, default false
+      - ignoreImage {boolean} whether to ignore images, default false
       - usePhantom {boolean} whether to use PhantomJS to read the page, default false
  *
  * @returns {Promise} Promise object representing text of the main content
  */
-const read = (url, {selector, paretoRatio = 0.6, keepHref = false, keepMarkup = false, usePhantom = false} = {}) => {
+const read = (url, {selector, paretoRatio = 0.6, keepHref = false, keepMarkup = false, ignoreImage = false, usePhantom = false} = {}) => {
   const callback = content => {
     const $ = cheerio.load(content);
     const html = selector ? $(selector).html() : $(pareto($, $('body'), paretoRatio)).html();
@@ -102,6 +103,7 @@ const read = (url, {selector, paretoRatio = 0.6, keepHref = false, keepMarkup = 
 
     return htmlToText.fromString(html, {
       ignoreHref: !keepHref,
+      ignoreImage,
       wordwrap: false,
       singleNewLineParagraphs: true
     }).replace(/\n\s*\n/g, '\n').replace(/\n/g, '\n\n');

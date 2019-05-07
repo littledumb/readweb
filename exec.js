@@ -11,10 +11,11 @@ const keepHref = process.argv.includes('--keepHref');
 const paretoArg = process.argv.filter(a => a.startsWith('--paretoRatio=')).pop();
 const paretoRatio = paretoArg ? parseFloat(paretoArg.substring('--paretoRatio='.length)) : 0.6;
 const keepMarkup = process.argv.includes('--keepMarkup');
+const ignoreImage = process.argv.includes('--ignoreImage');
 const usePhantom = process.argv.includes('--usePhantom');
 
 readweb
-  .read(url, {selector, paretoRatio, keepHref, keepMarkup, usePhantom})
+  .read(url, {selector, paretoRatio, keepHref, keepMarkup, ignoreImage, usePhantom})
   .then(content => {
     console.log(content);
   })

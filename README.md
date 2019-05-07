@@ -29,6 +29,7 @@ Parameters:
   * `keepHref`: (optional, default `false`) if `true`, the returned text will keep links in the original content.
   * `paretoRatio`: (optional, default 0.6) the pareto ratio, should be less than 1.0 but greater than 0.5.
   * `keepMarkup`: (optional, dafault false) if `true`, will return html instead of plain text.
+  * `ignoreImage`: (optional, default false) if `true`, ignore all images
   * `usePhantom`: (optional, default false) if `true`, will use `PhantomJS` to read the web page.
 
 ### Test
