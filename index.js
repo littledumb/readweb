@@ -1,19 +1,11 @@
 'use strict';
 
-const createPhantomPool = require('phantom-pool');
+const request = require('request-promise');
+const phantom = require('phantom');
 const cheerio = require('cheerio');
 const htmlToText = require('html-to-text');
-
-const pool = createPhantomPool({
-  maxUses: 0,
-  phantomArgs: [[
-    '--ignore-ssl-errors=yes', '--ssl-protocol=any', '--load-images=no'
-  ]]
-});
-
-const close = () => {
-  pool.drain().then(() => pool.clear());
-};
+const chardet = require('chardet');
+const iconv = require('iconv-lite');
 
 // Use Pareto's principle to find the main element
 const pareto = ($, el, r) => {
@@ -27,65 +19,95 @@ const pareto = ($, el, r) => {
   return candidate;
 };
 
-/**
- * Reads a web page, find the major element and returns its text content.
- *
- * @param {Object} options:
-      - url {string} the given web page url, required
-      - paretoRatio {number} should be less than 1.0 but greater than 0.5, default 06
-      - keepHref {boolean} whether to keep links in the content, default false
-      - selector {string} an cheerio DOM selector
-      - keepMarkup {boolean} whether to return html or plain text, default false
- *
- * @returns {Promise} Promise object representing text of the main content
- */
-const read = ({url, paretoRatio, keepHref, selector, keepMarkup, closePool} = {}) => {
+const closePhantom = async (ph, page) => {
+  if (page) {
+    await page.close();
+  }
+
+  if (ph) {
+    ph.exit();
+  }
+};
+
+const readWithPhantom = (url, callback) => {
   return new Promise((resolve, reject) => {
-    // let _ph = null;
+    let _ph = null;
     let _page = null;
     let _status = null;
-
-    return pool.use(async instance => {
-      return instance.createPage();
-    })
-    .then(page => {
+    return phantom.create().then(ph => {
+      _ph = ph;
+      return _ph.createPage();
+    }).then(page => {
       _page = page;
       return page.open(url);
-    })
-    .then(status => {
+    }).then(status => {
       _status = status;
       return _page.property('content');
-    })
-    .then(content => {
-      _page.close().then();
+    }).then(content => {
+      closePhantom(_ph, _page);
 
       if (_status >= 400) {
         reject(new Error(content));
       }
 
-      const $ = cheerio.load(content);
-      const html = selector ? $(selector).html() : $(pareto($, $('body'), paretoRatio || 0.6)).html();
-
-      if (keepMarkup) {
-        resolve(html);
-      }
-
-      const text = htmlToText.fromString(html, {
-        ignoreHref: !keepHref,
-        wordwrap: false,
-        singleNewLineParagraphs: true
-      }).replace(/\n\s*\n/g, '\n').replace(/\n/g, '\n\n');
-
-      resolve(text);
-    })
-    .catch(error => {
-      if (_page) {
-        _page.close().then();
-      }
-
+      resolve(callback(content));
+    }).catch(error => {
+      closePhantom(_ph, _page);
       reject(error);
     });
   });
 };
 
-module.exports = {read, close};
+const readWithRequest = (url, callback) => {
+  return new Promise((resolve, reject) => {
+    return request({
+      url,
+      method: 'GET',
+      encoding: null // Must set to null, otherwise request will use its default encoding
+    }).then(content => {
+      const encoding = chardet.detectAll(content);
+      if (encoding[0].confidence < 50 || !iconv.encodingExists(encoding[0].name)) {
+        // Fall back to using PhantomJS
+        return readWithPhantom(url, callback);
+      }
+
+      resolve(callback(iconv.decode(content, encoding[0].name)));
+    }).catch(error => {
+      reject(error);
+    });
+  });
+};
+
+/**
+ * Reads a web page, find the major element and returns its text content.
+ *
+ * @param {string} url, the web page url, required
+ * @param {Object} options, optional:
+      - selector {string} an cheerio DOM selector; if it's given, paretoRatio is ignored
+      - paretoRatio {number} should be less than 1.0 but greater than 0.5, default 0.6
+      - keepHref {boolean} whether to keep links in the content, default false
+      - keepMarkup {boolean} whether to return html or plain text, default false
+      - usePhantom {boolean} whether to use PhantomJS to read the page, default false
+ *
+ * @returns {Promise} Promise object representing text of the main content
+ */
+const read = (url, {selector, paretoRatio = 0.6, keepHref = false, keepMarkup = false, usePhantom = false} = {}) => {
+  const callback = content => {
+    const $ = cheerio.load(content);
+    const html = selector ? $(selector).html() : $(pareto($, $('body'), paretoRatio)).html();
+
+    if (keepMarkup) {
+      return html;
+    }
+
+    return htmlToText.fromString(html, {
+      ignoreHref: !keepHref,
+      wordwrap: false,
+      singleNewLineParagraphs: true
+    }).replace(/\n\s*\n/g, '\n').replace(/\n/g, '\n\n');
+  };
+
+  return usePhantom ? readWithPhantom(url, callback) : readWithRequest(url, callback);
+};
+
+module.exports = {read};

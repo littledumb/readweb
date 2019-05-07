@@ -3,6 +3,9 @@
   "version": "0.2.3",
   "description": "Read main content of a web page using Pareto principle.",
   "main": "index.js",
+  "scripts": {
+    "test": "xo"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/littledumb/readweb.git"
@@ -14,9 +17,18 @@
   },
   "homepage": "https://github.com/littledumb/readweb#readme",
   "dependencies": {
+    "chardet": "^0.7.0",
     "cheerio": "^1.0.0-rc.2",
     "html-to-text": "^4.0.0",
+    "iconv-lite": "^0.4.24",
     "phantom": "^6.0.3",
-    "phantom-pool": "^1.2.2"
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
+  },
+  "devDependencies": {
+    "xo": "^0.24.0"
+  },
+  "xo": {
+    "space": true
   }
 }
