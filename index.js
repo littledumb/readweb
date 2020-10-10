@@ -39,6 +39,7 @@ const decode = html => {
  * @param {string} url, the web page url, required
  * @param {Object} options, optional:
       - selector {string} an cheerio DOM selector; if it's given, paretoRatio is ignored
+      - tags {[string]} filter html elements, e.g. ['p', 'h1', 'h2']
       - paretoRatio {number} should be less than 1.0 but greater than 0.5, default 0.6
       - toText {boolean} whether convert the content to plain text, default true
       - fetchOptions {Object} options fed to fetch (see [make-fetch-happen](https://www.npmjs.com/package/make-fetch-happen))

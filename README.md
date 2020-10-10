@@ -29,6 +29,7 @@ readweb('https://en.wikipedia.org/wiki/Wikipedia', {
 #### Options:
 
 * `selector` a cheerio selector, if specified, pareto algorithm will be skipped
+* `tags` an array of html tags to filter elements, e.g. `['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']`
 * `paretoRatio` should be less than `1.0` but greater than `0.5`. Default: `0.6`
 * `toText` whether convert the content to plain text. Default: `true`
 * `fetchOptions` options fed to `fetch`. See [make-fetch-happen](https://www.npmjs.com/package/make-fetch-happen)
