@@ -1,11 +1,8 @@
 'use strict';
 
-const request = require('request-promise');
-const phantom = require('phantom');
+const fetch = require('make-fetch-happen').defaults();
 const cheerio = require('cheerio');
 const htmlToText = require('html-to-text');
-const chardet = require('chardet');
-const iconv = require('iconv-lite');
 
 // Use Pareto's principle to find the main element
 const pareto = ($, el, r) => {
@@ -19,97 +16,57 @@ const pareto = ($, el, r) => {
   return candidate;
 };
 
-const closePhantom = async (ph, page) => {
-  if (page) {
-    await page.close();
-  }
-
-  if (ph) {
-    ph.exit();
-  }
-};
-
-const readWithPhantom = (url, callback) => {
-  return new Promise((resolve, reject) => {
-    let _ph = null;
-    let _page = null;
-    let _status = null;
-    return phantom.create().then(ph => {
-      _ph = ph;
-      return _ph.createPage();
-    }).then(page => {
-      _page = page;
-      return page.open(url);
-    }).then(status => {
-      _status = status;
-      return _page.property('content');
-    }).then(content => {
-      closePhantom(_ph, _page);
-
-      if (_status >= 400) {
-        reject(new Error(content));
-      }
-
-      resolve(callback(content));
-    }).catch(error => {
-      closePhantom(_ph, _page);
-      reject(error);
+const decode = html => {
+    var translate_re = /&(nbsp|amp|quot|lt|gt);/g;
+    var translate = {
+        "nbsp":" ",
+        "amp" : "&",
+        "quot": "\"",
+        "lt"  : "<",
+        "gt"  : ">"
+    };
+    return html.replace(translate_re, function(match, entity) {
+        return translate[entity];
+    }).replace(/&#x([0-9A-F]+);/gi, function(match, numStr) {
+        var num = parseInt(numStr, 16);
+        return String.fromCharCode(num);
     });
-  });
-};
-
-const readWithRequest = (url, callback) => {
-  return new Promise((resolve, reject) => {
-    return request({
-      url,
-      method: 'GET',
-      encoding: null // Must set to null, otherwise request will use its default encoding
-    }).then(content => {
-      const encoding = chardet.detectAll(content);
-      if (encoding[0].confidence < 50 || !iconv.encodingExists(encoding[0].name)) {
-        // Fall back to using PhantomJS
-        return readWithPhantom(url, callback);
-      }
-
-      resolve(callback(iconv.decode(content, encoding[0].name)));
-    }).catch(error => {
-      reject(error);
-    });
-  });
 };
 
 /**
- * Reads a web page, find the major element and returns its text content.
+ * Reads a web page, find the major element and returns its content.
  *
  * @param {string} url, the web page url, required
  * @param {Object} options, optional:
       - selector {string} an cheerio DOM selector; if it's given, paretoRatio is ignored
       - paretoRatio {number} should be less than 1.0 but greater than 0.5, default 0.6
-      - keepHref {boolean} whether to keep links in the content, default false
-      - keepMarkup {boolean} whether to return html or plain text, default false
-      - ignoreImage {boolean} whether to ignore images, default false
-      - usePhantom {boolean} whether to use PhantomJS to read the page, default false
+      - toText {boolean} whether convert the content to plain text, default true
+      - fetchOptions {Object} options fed to fetch (see [make-fetch-happen](https://www.npmjs.com/package/make-fetch-happen))
+      - toTextOptions {Object} options fed to html-to-text (see [html-to-text](https://www.npmjs.com/package/html-to-text))
  *
  * @returns {Promise} Promise object representing text of the main content
  */
-const read = (url, {selector, paretoRatio = 0.6, keepHref = false, keepMarkup = false, ignoreImage = false, usePhantom = false} = {}) => {
-  const callback = content => {
-    const $ = cheerio.load(content);
-    const html = selector ? $(selector).html() : $(pareto($, $('body'), paretoRatio)).html();
+const read = (url, { selector, tags, paretoRatio = 0.6, toText = true, fetchOptions = {}, toTextOptions = {} } = {}) => {
+  return fetch(encodeURI(url), fetchOptions)
+  .then(res => res.text())
+  .then(body => {
+    const $ = cheerio.load(body);
+    const main = selector ? $(selector) : $(pareto($, $('body'), paretoRatio));
+    const html = Array.isArray(tags) && tags.length > 0 ?
+      $(main).children().map((i, ele) => {
+        if (ele.type === 'tag' && tags.includes(ele.name)) {
+          return $.html(ele);
+        }
 
-    if (keepMarkup) {
-      return html;
+        return '';
+      }).get().join('') : $(main).html();
+
+    if (!toText) {
+      return decode(html);
     }
 
-    return htmlToText.fromString(html, {
-      ignoreHref: !keepHref,
-      ignoreImage,
-      wordwrap: false,
-      singleNewLineParagraphs: true
-    }).replace(/\n\s*\n/g, '\n').replace(/\n/g, '\n\n');
-  };
-
-  return usePhantom ? readWithPhantom(url, callback) : readWithRequest(url, callback);
+    return htmlToText.fromString(html, toTextOptions);
+  });
 };
 
-module.exports = {read};
+module.exports = read;
