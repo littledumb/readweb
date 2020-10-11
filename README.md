@@ -12,6 +12,7 @@ Use Pareto principle to read the main content of a web page; no need to analyze 
 const readweb = require('readweb');
 
 readweb('https://en.wikipedia.org/wiki/Wikipedia', {
+  tags: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
   paretoRatio: 0.7,
   fetchOptions: {
     proxy: 'http://127.0.0.1:10000'
@@ -21,9 +22,8 @@ readweb('https://en.wikipedia.org/wiki/Wikipedia', {
     ignoreHref: true
   }
 })
-.then(txt => {
-  console.log(txt);
-});
+.then(console.log)
+.catch(console.error);
 ```
 
 #### Options:
