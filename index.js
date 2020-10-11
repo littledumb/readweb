@@ -48,7 +48,7 @@ const decode = html => {
  * @returns {Promise} Promise object representing text of the main content
  */
 const read = (url, { selector, tags, paretoRatio = 0.6, toText = true, fetchOptions = {}, toTextOptions = {} } = {}) => {
-  return fetch(encodeURI(url), fetchOptions)
+  return fetch(url, fetchOptions)
   .then(res => res.text())
   .then(body => {
     const $ = cheerio.load(body);
