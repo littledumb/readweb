@@ -15,11 +15,10 @@ readweb('https://en.wikipedia.org/wiki/Wikipedia', {
   tags: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
   paretoRatio: 0.7,
   fetchOptions: {
-    proxy: 'http://127.0.0.1:10000'
+    highWaterMark: 1024 * 1024
   },
   toTextOptions: {
-    ignoreImage: true,
-    ignoreHref: true
+    selectors: [{ selector: 'img', format: 'skip' }]
   }
 })
 .then(console.log)
@@ -32,5 +31,10 @@ readweb('https://en.wikipedia.org/wiki/Wikipedia', {
 * `tags` an array of html tags to filter elements, e.g. `['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']`
 * `paretoRatio` should be less than `1.0` but greater than `0.5`. Default: `0.6`
 * `toText` whether convert the content to plain text. Default: `true`
-* `fetchOptions` options fed to `fetch`. See [make-fetch-happen](https://www.npmjs.com/package/make-fetch-happen)
+* `fetchOptions` options fed to `fetch`. See [node-fetch](https://www.npmjs.com/package/node-fetch)
 * `toTextOptions` options fed to `html-to-text`. See [html-to-text](https://www.npmjs.com/package/html-to-text)
+
+### Major Changes
+
+* Use `node-fetch` instead of `make-fetch-happen`;
+* Use `fetch-cookie` to deal with cookies.

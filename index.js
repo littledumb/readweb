@@ -1,8 +1,10 @@
 'use strict';
 
-const fetch = require('make-fetch-happen').defaults();
+const nodeFetch = require('node-fetch');
+const fetch = require('fetch-cookie/node-fetch')(nodeFetch);
+
 const cheerio = require('cheerio');
-const htmlToText = require('html-to-text');
+const { convert } = require('html-to-text');
 
 // Use Pareto's principle to find the main element
 const pareto = ($, el, r) => {
@@ -66,7 +68,7 @@ const read = (url, { selector, tags, paretoRatio = 0.6, toText = true, fetchOpti
       return decode(html);
     }
 
-    return htmlToText.fromString(html, toTextOptions);
+    return convert(html, toTextOptions);
   });
 };
 
